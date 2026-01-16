@@ -1,4 +1,5 @@
 import { Cycle, UserProfile, DailyAdvice } from '../types';
+import { differenceInDays } from 'date-fns';
 
 const KEYS = {
   PROFILE: 'ckce_profile',
@@ -32,7 +33,7 @@ export const StorageService = {
   },
   updateCycle: (updatedCycle: Cycle): Cycle[] => {
     const cycles = StorageService.getCycles();
-    const newCycles = cycles.map(c => c.id === updatedCycle.id ? updatedCycle : c);
+    const newCycles = cycles.map(c => c.id === updatedCycle.id ? updatedCycle : c).sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
     StorageService.saveCycles(newCycles);
     return newCycles;
   },
@@ -43,18 +44,65 @@ export const StorageService = {
     return newCycles;
   },
 
+  // Helper: Recalculate Profile Stats based on current cycles
+  recalculateAndSaveProfile: (): UserProfile | null => {
+    const profile = StorageService.getProfile();
+    const cycles = StorageService.getCycles();
+    
+    if (!profile) return null;
+
+    let totalPeriodDays = 0;
+    let periodCount = 0;
+    
+    // 1. Calculate Average Period Duration (length of bleeding)
+    cycles.forEach(c => {
+      if (c.endDate) {
+        const duration = differenceInDays(new Date(c.endDate), new Date(c.startDate)) + 1;
+        if (duration > 0 && duration < 15) { // Sanity check
+          totalPeriodDays += duration;
+          periodCount++;
+        }
+      }
+    });
+
+    // 2. Calculate Average Cycle Length (gap between start dates)
+    let totalCycleDays = 0;
+    let gapCount = 0;
+    
+    // Sort desc first
+    const sortedCycles = [...cycles].sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+    
+    for (let i = 0; i < sortedCycles.length - 1; i++) {
+      const currentStart = new Date(sortedCycles[i].startDate);
+      const prevStart = new Date(sortedCycles[i+1].startDate);
+      const gap = differenceInDays(currentStart, prevStart);
+      
+      if (gap > 15 && gap < 60) { // Sanity check for valid cycle gaps
+        totalCycleDays += gap;
+        gapCount++;
+      }
+    }
+
+    const newProfile = {
+      ...profile,
+      averagePeriodDuration: periodCount > 0 ? Math.round(totalPeriodDays / periodCount) : profile.averagePeriodDuration,
+      averageCycleLength: gapCount > 0 ? Math.round(totalCycleDays / gapCount) : profile.averageCycleLength
+    };
+
+    StorageService.saveProfile(newProfile);
+    return newProfile;
+  },
+
   // Advice Cache (to prevent spamming API)
   getAdvice: (dateKey: string): DailyAdvice | null => {
     const data = localStorage.getItem(`${KEYS.ADVICE_CACHE}_${dateKey}`);
     return data ? JSON.parse(data) : null;
   },
   saveAdvice: (dateKey: string, advice: DailyAdvice): void => {
-    // Simple cleanup: try to remove old keys if needed, but for now just save
     try {
       localStorage.setItem(`${KEYS.ADVICE_CACHE}_${dateKey}`, JSON.stringify(advice));
     } catch (e) {
       console.warn('Storage full, clearing old advice');
-      // In a real app, implement LRU cache. Here we might just clear all advice.
     }
   },
 

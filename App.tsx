@@ -4,7 +4,7 @@ import { StorageService } from './services/storageService';
 import { Welcome } from './components/Welcome';
 import { Dashboard } from './components/Dashboard';
 import { History } from './components/History';
-import { Home, List, Settings } from 'lucide-react';
+import { Home, List } from 'lucide-react';
 
 export default function App() {
   const [view, setView] = useState<AppView>(AppView.ONBOARDING);
@@ -22,6 +22,9 @@ export default function App() {
         setView(AppView.DASHBOARD);
       }
     } else {
+      // Data cleared or new user
+      setProfile(null);
+      setCycles([]);
       setView(AppView.ONBOARDING);
     }
   };
@@ -45,11 +48,9 @@ export default function App() {
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-[#fdf2f8] text-gray-800 font-sans relative">
-      <main className="p-6">
-        <header className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-pink-600">LovelyDays</h1>
-        </header>
-
+      <main className="p-6 pt-8">
+        {/* Header removed as requested */}
+        
         {view === AppView.DASHBOARD && profile && (
           <div className="animate-fade-in-up">
             <Dashboard 

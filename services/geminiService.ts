@@ -20,7 +20,7 @@ export const GeminiService = {
         
         Hãy đưa ra lời khuyên ngắn gọn, ấm áp bằng tiếng Việt.
         Yêu cầu:
-        1. 2-3 hoạt động thể chất/tinh thần phù hợp.
+        1. 2-3 hoạt động thể chất/tinh thần phù hợp. Với mỗi hoạt động, hãy chọn 1 emoji phù hợp nhất để minh họa.
         2. Thực đơn 3 bữa (Sáng, Trưa, Tối) món ăn Việt Nam tốt cho sức khỏe lúc này.
         3. Một câu tâm trạng/động viên (mood).
         
@@ -38,7 +38,13 @@ export const GeminiService = {
               date: { type: Type.STRING, description: "Ngày hiện tại (YYYY-MM-DD)" }, // Placeholder
               activities: { 
                 type: Type.ARRAY, 
-                items: { type: Type.STRING }
+                items: { 
+                  type: Type.OBJECT,
+                  properties: {
+                    text: { type: Type.STRING, description: "Tên hoạt động" },
+                    emoji: { type: Type.STRING, description: "Emoji minh họa" }
+                  }
+                }
               },
               menu: {
                 type: Type.OBJECT,

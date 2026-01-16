@@ -11,9 +11,14 @@ export interface UserProfile {
   averagePeriodDuration: number; // Default 5
 }
 
+export interface Activity {
+  text: string;
+  emoji: string;
+}
+
 export interface DailyAdvice {
   date: string;
-  activities: string[];
+  activities: Activity[];
   menu: {
     breakfast: string;
     lunch: string;

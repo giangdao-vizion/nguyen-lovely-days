@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { DailyAdvice } from '../types';
+import { DailyAdvice, Activity } from '../types';
 import { GeminiService } from '../services/geminiService';
 import { StorageService } from '../services/storageService';
-import { Sparkles, Coffee, Sun, Utensils, RefreshCcw } from 'lucide-react';
+import { Sparkles, Utensils, RefreshCcw, Sun } from 'lucide-react';
 
 interface SmartAdviceProps {
   dayOfCycle: number;
@@ -133,12 +133,20 @@ export const SmartAdvice: React.FC<SmartAdviceProps> = ({ dayOfCycle, isPeriod, 
           <span>Hoạt động gợi ý</span>
         </div>
         <div className="grid grid-cols-1 gap-3">
-          {advice.activities.map((activity, idx) => (
-            <div key={idx} className="flex items-center gap-3 p-3 rounded-xl bg-orange-50 border border-orange-100 text-gray-700">
-              <div className="w-2 h-2 rounded-full bg-orange-400 flex-shrink-0"></div>
-              {activity}
-            </div>
-          ))}
+          {(advice.activities as unknown as (string | Activity)[]).map((item, idx) => {
+            // Handle legacy data (string) vs new data (Activity object)
+            const text = typeof item === 'string' ? item : item.text;
+            const emoji = typeof item === 'string' ? '✨' : item.emoji;
+            
+            return (
+              <div key={idx} className="flex items-center gap-3 p-3 rounded-xl bg-orange-50 border border-orange-100 text-gray-700 transition-transform hover:scale-[1.02]">
+                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-xl shadow-sm border border-orange-100 flex-shrink-0">
+                  {emoji}
+                </div>
+                <span className="font-medium text-sm flex-1">{text}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
 

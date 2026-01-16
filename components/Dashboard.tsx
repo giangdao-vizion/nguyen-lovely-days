@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Cycle, UserProfile } from '../types';
-import { addDays, differenceInDays, format, parseISO } from 'date-fns';
+import { addDays, differenceInDays, format } from 'date-fns';
 import { Droplet, CheckCircle, Save, PenLine, RotateCcw } from 'lucide-react';
 import { SmartAdvice } from './SmartAdvice';
 import { StorageService } from '../services/storageService';
@@ -29,7 +29,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ profile, cycles, onUpdate 
 
   // LOGIC
   const today = new Date();
-  const startDate = parseISO(currentCycle.startDate);
+  const startDate = new Date(currentCycle.startDate);
   
   // Is the period currently active?
   const isPeriodFinished = !!currentCycle.endDate;
@@ -47,7 +47,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ profile, cycles, onUpdate 
     if (finishedCycles.length === 0) return;
     
     const totalDuration = finishedCycles.reduce((acc, c) => {
-        return acc + (differenceInDays(parseISO(c.endDate!), parseISO(c.startDate)) + 1);
+        return acc + (differenceInDays(new Date(c.endDate!), new Date(c.startDate)) + 1);
     }, 0);
     
     const newAvg = Math.round(totalDuration / finishedCycles.length);
@@ -196,7 +196,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ profile, cycles, onUpdate 
                 <div className="mt-6 pt-4 border-t border-white/20">
                   {!isEditingEndDate ? (
                     <div className="flex flex-col items-center gap-2">
-                       <p className="text-sm opacity-80">Kỳ trước kết thúc: {format(parseISO(currentCycle.endDate), 'dd/MM/yyyy')}</p>
+                       <p className="text-sm opacity-80">Kỳ trước kết thúc: {format(new Date(currentCycle.endDate), 'dd/MM/yyyy')}</p>
                        <button 
                          onClick={() => {
                            setEditDate(currentCycle.endDate!);
