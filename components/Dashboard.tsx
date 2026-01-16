@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Cycle, UserProfile } from '../types';
 import { addDays, differenceInDays, format, parseISO } from 'date-fns';
-import { Droplet, CheckCircle, Save, PenLine } from 'lucide-react';
+import { Droplet, CheckCircle, Save, PenLine, RotateCcw } from 'lucide-react';
 import { SmartAdvice } from './SmartAdvice';
 import { StorageService } from '../services/storageService';
 
@@ -15,10 +15,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ profile, cycles, onUpdate 
   const [loading, setLoading] = useState(false);
   const currentCycle = cycles[0]; // Most recent cycle
   const [note, setNote] = useState(currentCycle?.note || '');
+  
+  // Edit End Date State
+  const [isEditingEndDate, setIsEditingEndDate] = useState(false);
+  const [editDate, setEditDate] = useState('');
 
   // Sync note state when currentCycle changes (e.g. switching users or adding new cycle)
   useEffect(() => {
     setNote(currentCycle?.note || '');
+    // Reset edit state when cycle changes
+    setIsEditingEndDate(false);
   }, [currentCycle]);
 
   // LOGIC
@@ -35,6 +41,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ profile, cycles, onUpdate 
   const averageCycleLength = profile.averageCycleLength || 28;
   const nextPeriodDate = addDays(startDate, averageCycleLength);
   const daysUntilNext = differenceInDays(nextPeriodDate, today);
+
+  const recalculateProfileStats = (updatedCycles: Cycle[]) => {
+    const finishedCycles = updatedCycles.filter(c => c.endDate);
+    if (finishedCycles.length === 0) return;
+    
+    const totalDuration = finishedCycles.reduce((acc, c) => {
+        return acc + (differenceInDays(parseISO(c.endDate!), parseISO(c.startDate)) + 1);
+    }, 0);
+    
+    const newAvg = Math.round(totalDuration / finishedCycles.length);
+    StorageService.saveProfile({
+        ...profile,
+        averagePeriodDuration: newAvg
+    });
+  };
 
   const handleEndPeriod = () => {
     setLoading(true);
@@ -94,7 +115,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ profile, cycles, onUpdate 
     const updatedCycle = { ...currentCycle, note: note.trim() };
     StorageService.updateCycle(updatedCycle);
     onUpdate();
-    // Optional: Visual feedback could go here
+  };
+
+  const handleUpdateEndDate = () => {
+    if (!editDate) return;
+    const updatedCycle = { ...currentCycle, endDate: editDate };
+    StorageService.updateCycle(updatedCycle);
+    
+    const updatedCycles = cycles.map(c => c.id === updatedCycle.id ? updatedCycle : c);
+    recalculateProfileStats(updatedCycles);
+    
+    setIsEditingEndDate(false);
+    onUpdate();
+  };
+
+  const handleResumePeriod = () => {
+    const updatedCycle = { ...currentCycle, endDate: undefined };
+    StorageService.updateCycle(updatedCycle);
+    
+    // Recalc without this cycle (it's now ongoing)
+    const updatedCycles = cycles.map(c => c.id === updatedCycle.id ? updatedCycle : c);
+    recalculateProfileStats(updatedCycles);
+    
+    setIsEditingEndDate(false);
+    onUpdate();
   };
 
   return (
@@ -146,6 +190,60 @@ export const Dashboard: React.FC<DashboardProps> = ({ profile, cycles, onUpdate 
                   Kỳ kinh đã đến
                 </button>
               </div>
+
+              {/* Edit Last Cycle End Date */}
+              {currentCycle && currentCycle.endDate && (
+                <div className="mt-6 pt-4 border-t border-white/20">
+                  {!isEditingEndDate ? (
+                    <div className="flex flex-col items-center gap-2">
+                       <p className="text-sm opacity-80">Kỳ trước kết thúc: {format(parseISO(currentCycle.endDate), 'dd/MM/yyyy')}</p>
+                       <button 
+                         onClick={() => {
+                           setEditDate(currentCycle.endDate!);
+                           setIsEditingEndDate(true);
+                         }}
+                         className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-full flex items-center gap-1 transition-colors"
+                       >
+                         <PenLine size={12} />
+                         Chỉnh sửa ngày kết thúc
+                       </button>
+                    </div>
+                  ) : (
+                    <div className="bg-white/10 p-4 rounded-xl backdrop-blur-sm animate-fade-in text-left">
+                      <p className="text-sm font-bold mb-2 text-center">Sửa ngày kết thúc</p>
+                      <input 
+                        type="date" 
+                        value={editDate}
+                        onChange={(e) => setEditDate(e.target.value)}
+                        className="w-full p-2 rounded-lg text-gray-700 text-sm mb-3 focus:outline-none"
+                      />
+                      <div className="flex flex-col gap-2">
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => setIsEditingEndDate(false)}
+                            className="flex-1 bg-white/20 hover:bg-white/30 py-2 rounded-lg text-xs font-bold"
+                          >
+                            Hủy
+                          </button>
+                          <button 
+                            onClick={handleUpdateEndDate}
+                            className="flex-1 bg-white text-purple-600 hover:bg-purple-50 py-2 rounded-lg text-xs font-bold shadow-sm"
+                          >
+                            Lưu
+                          </button>
+                        </div>
+                        <button 
+                           onClick={handleResumePeriod}
+                           className="w-full flex items-center justify-center gap-1 text-xs text-white/90 hover:text-white hover:bg-white/10 py-2 rounded-lg transition-colors border border-white/30"
+                        >
+                           <RotateCcw size={12} />
+                           Vẫn đang có kinh (Xóa ngày kết thúc)
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           )}
         </div>

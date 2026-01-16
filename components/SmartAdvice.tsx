@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { DailyAdvice } from '../types';
 import { GeminiService } from '../services/geminiService';
 import { StorageService } from '../services/storageService';
-import { Sparkles, Coffee, Sun, Utensils } from 'lucide-react';
+import { Sparkles, Coffee, Sun, Utensils, RefreshCcw } from 'lucide-react';
 
 interface SmartAdviceProps {
   dayOfCycle: number;
@@ -13,6 +13,7 @@ interface SmartAdviceProps {
 export const SmartAdvice: React.FC<SmartAdviceProps> = ({ dayOfCycle, isPeriod, userName }) => {
   const [advice, setAdvice] = useState<DailyAdvice | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     const todayKey = new Date().toISOString().split('T')[0];
@@ -40,6 +41,28 @@ export const SmartAdvice: React.FC<SmartAdviceProps> = ({ dayOfCycle, isPeriod, 
 
     fetchAdvice();
   }, [dayOfCycle, isPeriod, userName]);
+
+  const handleRefreshMenu = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    
+    // Fetch new advice but only use the menu part
+    const newAdvice = await GeminiService.getAdviceForCycleDay(dayOfCycle, isPeriod, userName);
+    
+    if (newAdvice && advice) {
+      const updatedAdvice = {
+        ...advice,
+        menu: newAdvice.menu
+      };
+      setAdvice(updatedAdvice);
+      
+      // Update cache with the new menu mixed in
+      const todayKey = new Date().toISOString().split('T')[0];
+      StorageService.saveAdvice(todayKey, updatedAdvice);
+    }
+    
+    setIsRefreshing(false);
+  };
 
   if (loading) {
     return (
@@ -72,11 +95,22 @@ export const SmartAdvice: React.FC<SmartAdviceProps> = ({ dayOfCycle, isPeriod, 
 
       {/* Menu */}
       <div className="bg-pink-50 rounded-2xl p-4 border border-pink-100">
-        <div className="flex items-center gap-2 mb-3 text-pink-700 font-bold">
-          <Utensils size={20} />
-          <span>Thực đơn đề xuất</span>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2 text-pink-700 font-bold">
+            <Utensils size={20} />
+            <span>Thực đơn đề xuất</span>
+          </div>
+          <button 
+            onClick={handleRefreshMenu}
+            disabled={isRefreshing}
+            className={`p-2 rounded-full bg-white text-pink-500 hover:bg-pink-100 shadow-sm border border-pink-100 transition-all ${isRefreshing ? 'opacity-70 cursor-wait' : 'hover:scale-105 active:scale-95'}`}
+            title="Đổi thực đơn khác"
+          >
+            <RefreshCcw size={16} className={isRefreshing ? "animate-spin" : ""} />
+          </button>
         </div>
-        <ul className="space-y-3">
+        
+        <ul className={`space-y-3 transition-opacity duration-300 ${isRefreshing ? 'opacity-50' : 'opacity-100'}`}>
           <li className="flex gap-3">
             <span className="font-semibold text-pink-500 min-w-[60px]">Sáng:</span>
             <span className="text-gray-700">{advice.menu.breakfast}</span>

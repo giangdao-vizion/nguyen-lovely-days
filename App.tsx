@@ -47,7 +47,7 @@ export default function App() {
     <div className="max-w-md mx-auto min-h-screen bg-[#fdf2f8] text-gray-800 font-sans relative">
       <main className="p-6">
         <header className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-pink-600">Chu Kỳ Của Em</h1>
+          <h1 className="text-2xl font-bold text-pink-600">LovelyDays</h1>
         </header>
 
         {view === AppView.DASHBOARD && profile && (

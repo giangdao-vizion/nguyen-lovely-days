@@ -41,7 +41,7 @@ export const Welcome: React.FC<WelcomeProps> = ({ onComplete }) => {
         
         <h1 className="text-3xl font-bold text-pink-600 mb-2">Chào bạn mới!</h1>
         <p className="text-gray-600 mb-8 text-lg">
-          Để "Chu Kỳ Của Em" chăm sóc bạn tốt hơn, hãy cho mình biết một chút thông tin nhé.
+          Để "LovelyDays" chăm sóc bạn tốt hơn, hãy cho mình biết một chút thông tin nhé.
         </p>
 
         <div className="space-y-6 text-left">
